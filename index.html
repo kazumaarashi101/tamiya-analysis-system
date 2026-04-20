@@ -477,7 +477,67 @@ body {
 }
 </style>
 </head>
-<body>
+<body class="tamiya-locked">
+<style id="tamiya-lock-style">
+  body.tamiya-locked > *:not(#tamiya-gate){display:none!important}
+  #tamiya-gate{position:fixed;inset:0;background:#1a1814;color:#f5f3ee;display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:99999;font-family:'Zen Kaku Gothic New',system-ui,sans-serif;padding:20px;box-sizing:border-box;}
+  #tamiya-gate form{display:flex;flex-direction:column;gap:12px;max-width:360px;width:100%;}
+  #tamiya-gate h1{font-size:20px;margin:0 0 8px;text-align:center;letter-spacing:.04em;}
+  #tamiya-gate input{padding:12px 14px;font-size:16px;border:1px solid #8a8480;border-radius:6px;background:#2a2520;color:#f5f3ee;-webkit-appearance:none;appearance:none;}
+  #tamiya-gate input:focus{outline:2px solid #c8460a;border-color:#c8460a;}
+  #tamiya-gate button{padding:12px 14px;font-size:16px;border:0;border-radius:6px;background:#c8460a;color:#fff;cursor:pointer;font-weight:700;letter-spacing:.08em;}
+  #tamiya-gate button:hover{background:#e0551a;}
+  #tamiya-gate .err{color:#ff8a80;font-size:13px;min-height:18px;text-align:center;}
+  #tamiya-gate .note{font-size:12px;color:#8a8480;text-align:center;margin-top:8px;}
+  body:not(.tamiya-locked) #tamiya-gate{display:none;}
+</style>
+<div id="tamiya-gate" role="dialog" aria-label="パスワード入力">
+  <form id="tamiya-gate-form" autocomplete="off">
+    <h1>🔒 田宮打席分析システム</h1>
+    <input type="password" id="tamiya-pw" placeholder="パスワード" autocomplete="off" autofocus aria-label="パスワード">
+    <button type="submit">入場</button>
+    <div id="tamiya-err" class="err" aria-live="polite"></div>
+    <div class="note">関係者以外アクセス不可</div>
+    <noscript><div class="err">このページはJavaScriptが必要です</div></noscript>
+  </form>
+</div>
+<script>
+(function(){
+  var EXPECTED = "4b2072a76fc60a24f2b306b056817ac92b58e35a83770cb9ccffc4520a947e32";
+  var STORAGE_KEY = "tamiya-auth-v1";
+  function sha256Hex(str){
+    var enc = new TextEncoder().encode(str);
+    return crypto.subtle.digest("SHA-256", enc).then(function(buf){
+      var bytes = new Uint8Array(buf);
+      var hex = "";
+      for(var i=0;i<bytes.length;i++){ hex += bytes[i].toString(16).padStart(2,"0"); }
+      return hex;
+    });
+  }
+  function unlock(){
+    document.body.classList.remove("tamiya-locked");
+    try{ sessionStorage.setItem(STORAGE_KEY, "ok"); }catch(e){}
+  }
+  try{
+    if(sessionStorage.getItem(STORAGE_KEY) === "ok"){ unlock(); return; }
+  }catch(e){}
+  document.addEventListener("DOMContentLoaded", function(){
+    var form = document.getElementById("tamiya-gate-form");
+    var pw   = document.getElementById("tamiya-pw");
+    var err  = document.getElementById("tamiya-err");
+    if(!form) return;
+    form.addEventListener("submit", function(ev){
+      ev.preventDefault();
+      err.textContent = "";
+      var val = pw.value || "";
+      sha256Hex(val).then(function(h){
+        if(h === EXPECTED){ unlock(); }
+        else{ err.textContent = "パスワードが違います"; pw.value = ""; pw.focus(); }
+      }).catch(function(){ err.textContent = "エラーが発生しました"; });
+    });
+  });
+})();
+</script>
 
 <input type="file" id="photoInput" accept="image/*" onchange="loadPhoto(event)">
 <div class="header" style="display:flex;align-items:center;gap:14px;padding:16px 20px;">
